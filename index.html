@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>FAQ Assistant</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #eef3ff;
+            margin: 0;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 750px;
+            margin: auto;
+            background: white;
+            padding: 35px;
+            border-radius: 18px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.12);
+        }
+
+        h1 {
+            text-align: center;
+            color: #3157c8;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        h2 {
+            color: #3157c8;
+            margin-top: 10px;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 13px;
+            margin: 8px 0;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 15px;
+        }
+
+        button {
+            padding: 12px 24px;
+            background: #3157c8;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            margin-top: 5px;
+        }
+
+        button:hover {
+            background: #2445a5;
+        }
+
+        #answer {
+            margin-top: 20px;
+            padding: 18px;
+            background: #eef3ff;
+            border-radius: 10px;
+            min-height: 25px;
+        }
+
+        #answer h3 {
+            color: #3157c8;
+            margin-top: 0;
+        }
+
+        #addMessage {
+            font-weight: bold;
+            margin-top: 15px;
+        }
+
+        hr {
+            margin: 35px 0;
+            border: none;
+            border-top: 1px solid #ddd;
+        }
+
+        .info {
+            margin-top: 25px;
+            padding: 15px;
+            background: #f7f7f7;
+            border-radius: 10px;
+            color: #555;
+        }
+    </style>
+</head>
+
+
+<body>
+
+    <div class="container">
+
+        <h1>🤖 FAQ Assistant</h1>
+
+        <p class="subtitle">
+            Ask your question and get an instant answer.
+        </p>
+
+
+        <!-- ASK QUESTION -->
+
+        <h2>Ask a Question</h2>
+
+        <select id="categoryFilter">
+
+            <option value="">
+                All Categories
+            </option>
+
+            <option value="Account">
+                Account
+            </option>
+
+            <option value="Orders">
+                Orders
+            </option>
+
+            <option value="Payment">
+                Payment
+            </option>
+
+            <option value="Support">
+                Support
+            </option>
+
+            <option value="Delivery">
+                Delivery
+            </option>
+
+        </select>
+
+
+        <input
+            type="text"
+            id="question"
+            placeholder="Enter your question"
+        >
+
+
+        <button onclick="searchFAQ()">
+            Ask
+        </button>
+
+
+        <div id="answer">
+            Your answer will appear here.
+        </div>
+
+
+        <hr>
+
+
+        <!-- ADD NEW FAQ -->
+
+        <h2>Add New FAQ</h2>
+
+        <input
+            type="text"
+            id="category"
+            placeholder="Category"
+        >
+
+        <input
+            type="text"
+            id="newQuestion"
+            placeholder="Question"
+        >
+
+        <input
+            type="text"
+            id="newAnswer"
+            placeholder="Answer"
+        >
+
+        <button onclick="addFAQ()">
+            Add FAQ
+        </button>
+
+        <p id="addMessage"></p>
+
+
+        <div class="info">
+            <strong>FAQ Assistant</strong>
+            <br>
+            This system stores frequently asked questions in MongoDB
+            and provides answers through a Node.js backend.
+        </div>
+
+    </div>
+
+
+    <script>
+
+        // =====================================
+        // SEARCH FAQ
+        // =====================================
+
+        async function searchFAQ() {
+
+            const question =
+                document.getElementById("question").value.trim();
+
+            const category =
+                document.getElementById("categoryFilter").value;
+
+            const answerBox =
+                document.getElementById("answer");
+
+
+            if (!question) {
+
+                answerBox.innerHTML =
+                    "<p>Please enter a question.</p>";
+
+                return;
+            }
+
+
+            try {
+
+                const response = await fetch(
+                    `http://localhost:5000/api/faqs/search?keyword=${encodeURIComponent(question)}`
+                );
+
+
+                const data = await response.json();
+
+
+                let results = data;
+
+
+                // Category filter
+
+                if (category) {
+
+                    results = data.filter(
+                        faq => faq.category === category
+                    );
+
+                }
+
+
+                if (results.length > 0) {
+
+                    answerBox.innerHTML = `
+
+                        <h3>Answer:</h3>
+
+                        <p>
+                            ${results[0].answer}
+                        </p>
+
+                        <small>
+                            Category: ${results[0].category}
+                        </small>
+
+                    `;
+
+                } else {
+
+                    answerBox.innerHTML = `
+
+                        <p>
+                            Sorry, I couldn't find an answer.
+                        </p>
+
+                    `;
+
+                }
+
+
+            } catch (error) {
+
+                answerBox.innerHTML = `
+
+                    <p>
+                        Unable to connect to the server.
+                    </p>
+
+                `;
+
+            }
+
+        }
+
+
+
+        // =====================================
+        // ADD NEW FAQ
+        // =====================================
+
+        async function addFAQ() {
+
+            const category =
+                document.getElementById("category").value.trim();
+
+            const question =
+                document.getElementById("newQuestion").value.trim();
+
+            const answer =
+                document.getElementById("newAnswer").value.trim();
+
+            const message =
+                document.getElementById("addMessage");
+
+
+            if (!category || !question || !answer) {
+
+                message.style.color = "red";
+
+                message.innerText =
+                    "Please fill all fields.";
+
+                return;
+            }
+
+
+            try {
+
+                const response = await fetch(
+                    "http://localhost:5000/api/faqs",
+                    {
+
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+
+                        body: JSON.stringify({
+
+                            category: category,
+
+                            question: question,
+
+                            answer: answer
+
+                        })
+
+                    }
+                );
+
+
+                if (response.ok) {
+
+                    message.style.color = "green";
+
+                    message.innerText =
+                        "FAQ added successfully!";
+
+
+                    document.getElementById("category").value = "";
+
+                    document.getElementById("newQuestion").value = "";
+
+                    document.getElementById("newAnswer").value = "";
+
+
+                } else {
+
+                    message.style.color = "red";
+
+                    message.innerText =
+                        "Error adding FAQ.";
+
+                }
+
+
+            } catch (error) {
+
+                message.style.color = "red";
+
+                message.innerText =
+                    "Unable to connect to the server.";
+
+            }
+
+        }
+
+    </script>
+
+</body>
+
+</html>
